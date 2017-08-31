@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sync"
 )
 
 // Option for file pick
@@ -27,7 +28,7 @@ func NewFilePicker(o Option) func(string) <-chan string {
 
 		go func(opt Option) {
 
-			alreadySeen := map[string]bool{}
+			alreadySeen := new(sync.Map)
 
 			err := filepath.Walk(r, func(pf string, info os.FileInfo, err error) error {
 
@@ -62,7 +63,7 @@ func NewFilePicker(o Option) func(string) <-chan string {
 
 				if opt.PickupAlreadySeen == false {
 					sum, err := sha256sum(p)
-					if alreadySeen[sum] {
+					if _, ok := alreadySeen.Load(sum); ok {
 						return nil
 					}
 
@@ -70,8 +71,7 @@ func NewFilePicker(o Option) func(string) <-chan string {
 						log.Println(err)
 						return nil
 					}
-
-					alreadySeen[sum] = true
+					alreadySeen.Store(sum, true)
 				}
 
 				out <- p

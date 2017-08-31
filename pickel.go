@@ -31,6 +31,10 @@ func NewFilePicker(o Option) func(string) <-chan string {
 
 			err := filepath.Walk(r, func(pf string, info os.FileInfo, err error) error {
 
+				if err != nil {
+					return nil
+				}
+
 				if info.IsDir() {
 					return nil
 				}

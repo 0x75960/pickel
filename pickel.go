@@ -103,7 +103,12 @@ func PickIn(root string, toBePicked func(os.FileInfo) bool) (out <-chan string) 
 
 		for _, item := range items {
 			if toBePicked(item) {
-				o <- item.Name()
+				p := filepath.Join(root, item.Name())
+				if a, err := filepath.Abs(p); err == nil {
+					o <- a
+				} else {
+					o <- p
+				}
 			}
 		}
 

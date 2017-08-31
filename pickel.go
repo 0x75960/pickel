@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -84,6 +85,58 @@ func NewFilePicker(o Option) func(string) <-chan string {
 		return out
 	}
 
+}
+
+// PickIn root directory match with specified condition (not recurse)
+func PickIn(root string, toBePicked func(os.FileInfo) bool) (out <-chan string) {
+
+	o := make(chan string)
+
+	go func() {
+		defer close(o)
+
+		items, err := ioutil.ReadDir(root)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		for _, item := range items {
+			if toBePicked(item) {
+				o <- item.Name()
+			}
+		}
+
+	}()
+
+	return o
+}
+
+// DirsIn specified directory (not recurse)
+func DirsIn(root string) (out <-chan string) {
+	return PickIn(
+		root,
+		func(i os.FileInfo) bool { return i.IsDir() },
+	)
+}
+
+// FilesIn specified directory (not recurse)
+func FilesIn(root string) (out <-chan string) {
+	return PickIn(
+		root,
+		func(i os.FileInfo) (toBePicked bool) {
+
+			if i.IsDir() {
+				return
+			}
+
+			if i.Size() == 0 {
+				return
+			}
+
+			return true
+		},
+	)
 }
 
 // sha256sum of file
